@@ -55,18 +55,34 @@ namespace TwitchBot.Services
             var twitchHandler = new TwitchIrcHandler(tcpClient);
             twitchHandler.Login(_twitchOAuth, "wondyrr");
             twitchHandler.JoinChat(chat.TwitchName);
+
+            var timeout = 1000;
+            var reconnectionCount = 0;
             
             while (true)
             {
                 var line = await twitchHandler.ReadMessage();
                 
-                HandleMessage(twitchHandler, chat, line);
-
+                try {
+                    HandleMessage(twitchHandler, chat, line);
+                } catch(Exception e)
+                {
+                    Console.WriteLine("Connection dropped, reconnecting in " + timeout);
+                    tcpClient.Close();
+                    Thread.Sleep(timeout);
+                    timeout = timeout * 2;
+                    reconnectionCount++;
+                    tcpClient = new TcpClient(ip, port);
+                    twitchHandler = new TwitchIrcHandler(tcpClient);
+                    twitchHandler.Login(_twitchOAuth, "wondyrr");
+                    twitchHandler.JoinChat(chat.TwitchName);
+                }
             }
         }
         private void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
         {
             string[] split = line.Split(" ");
+            
             if (split.Length < 1) return;
             
             switch (split[1])
@@ -85,6 +101,7 @@ namespace TwitchBot.Services
                     handler.Pong(split[1]);
                     break;
                 default:
+                    Console.WriteLine(split[1]);
                     Console.WriteLine("This command is not supported yet");
                     break;
             }
