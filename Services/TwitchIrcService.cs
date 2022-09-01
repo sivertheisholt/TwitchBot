@@ -53,10 +53,8 @@ namespace TwitchBot.Services
         {
             var tcpClient = new TcpClient(ip, port);
             var twitchHandler = new TwitchIrcHandler(tcpClient);
-            twitchHandler.Login(_twitchOAuth, "Wondyrr");
+            twitchHandler.Login(_twitchOAuth, "wondyrr");
             twitchHandler.JoinChat(chat.TwitchName);
-
-            Console.WriteLine(chat.TwitchName);
             
             while (true)
             {
@@ -68,11 +66,8 @@ namespace TwitchBot.Services
         }
         private void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
         {
-            Console.WriteLine(line);
             string[] split = line.Split(" ");
             if (split.Length < 1) return;
-
-            Console.WriteLine(split);
             
             switch (split[1])
             {
@@ -87,26 +82,25 @@ namespace TwitchBot.Services
                     SendHttpRequest(username, message, chat);
                     break;
                 case "PING":
-                    handler.Pong();
+                    handler.Pong(split[1]);
                     break;
                 default:
-                    Console.WriteLine("Something");
+                    Console.WriteLine("This command is not supported yet");
                     break;
             }
         }
         private async void SendHttpRequest(string username, string message, TwitchChat chat)
         {
+            // Sending message to discord bot
             var dto = new {Username = username, Message = message};
             var jsonString = JsonSerializer.Serialize(dto);
-            Console.WriteLine(jsonString);
             var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
             
             try{
                 var result = await _httpClient.PostAsync($"{chat.BotBaseUrl}:{chat.BotBasePort}/TwitchChat/message", httpContent);
             } catch(HttpRequestException e)
             {
-                Console.WriteLine(e);
-                Console.WriteLine("Can't connect to API, skipping...");
+                Console.WriteLine("Can't connect to API, skipping..." + e);
             }
         }
         private void CreateChats(string twitchName, string baseUrl, string basePort)

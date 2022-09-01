@@ -27,10 +27,10 @@ namespace TwitchBot.Handlers
             Console.WriteLine($"Joining chat: {twitchName}");
             await _writer.WriteLineAsync($"JOIN #{twitchName}");
         }
-        public async void Pong()
+        public async void Pong(string message)
         {
-            Console.WriteLine("Sending PONG");
-            await _writer.WriteLineAsync($"PONG");
+            Console.WriteLine("Sending PONG with message: " + message);
+            await _writer.WriteLineAsync($"PONG {message}");
         }
         public async Task<string> ReadMessage()
         {
