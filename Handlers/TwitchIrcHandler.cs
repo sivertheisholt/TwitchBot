@@ -16,18 +16,18 @@ namespace TwitchBot.Handlers
             _writer = new StreamWriter(client.GetStream())  { NewLine = "\r\n", AutoFlush = true};
         }
 
-        public async void Login(string password, string nick)
+        public async Task Login(string password, string nick)
         {
             Console.WriteLine("Logging in");
             await _writer.WriteLineAsync($"PASS {password}");
             await _writer.WriteLineAsync($"NICK {nick}");
         }
-        public async void JoinChat(string twitchName)
+        public async Task JoinChat(string twitchName)
         {
             Console.WriteLine($"Joining chat: {twitchName}");
             await _writer.WriteLineAsync($"JOIN #{twitchName}");
         }
-        public async void Pong(string message)
+        public async Task Pong(string message)
         {
             Console.WriteLine("Sending PONG with message: " + message);
             await _writer.WriteLineAsync($"PONG {message}");

@@ -53,8 +53,8 @@ namespace TwitchBot.Services
         {
             var tcpClient = new TcpClient(ip, port);
             var twitchHandler = new TwitchIrcHandler(tcpClient);
-            twitchHandler.Login(_twitchOAuth, "wondyrr");
-            twitchHandler.JoinChat(chat.TwitchName);
+            await twitchHandler.Login(_twitchOAuth, "wondyrr");
+            await twitchHandler.JoinChat(chat.TwitchName);
 
             var timeout = 1000;
             var reconnectionCount = 0;
@@ -74,12 +74,12 @@ namespace TwitchBot.Services
                     reconnectionCount++;
                     tcpClient = new TcpClient(ip, port);
                     twitchHandler = new TwitchIrcHandler(tcpClient);
-                    twitchHandler.Login(_twitchOAuth, "wondyrr");
-                    twitchHandler.JoinChat(chat.TwitchName);
+                    await twitchHandler.Login(_twitchOAuth, "wondyrr");
+                    await twitchHandler.JoinChat(chat.TwitchName);
                 }
             }
         }
-        private void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
+        private async void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
         {
             string[] split = line.Split(" ");
             
@@ -98,7 +98,7 @@ namespace TwitchBot.Services
                     SendHttpRequest(username, message, chat);
                     break;
                 case "PING":
-                    handler.Pong(split[1]);
+                    await handler.Pong(split[1]);
                     break;
                 default:
                     Console.WriteLine(split[1]);
