@@ -15,7 +15,9 @@ builder.Services.AddSingleton<ITwitchIrcService, TwitchIrcService>();
 
 var app = builder.Build();
 
-app.Services.GetRequiredService<ITwitchIrcService>();
+var twitchService = app.Services.GetRequiredService<ITwitchIrcService>();
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

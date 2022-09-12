@@ -19,6 +19,7 @@ namespace TwitchBot.Services
         static string ip = "irc.chat.twitch.tv";
         static int port = 6667;
         private readonly HttpClient _httpClient;
+        private readonly Dictionary<string, TwitchConnection> connections = new Dictionary<string, TwitchConnection>();
 
         public TwitchIrcService(IConfiguration config, HttpClient httpClient)
         {
@@ -42,41 +43,27 @@ namespace TwitchBot.Services
                     Environment.GetEnvironmentVariable("DISCORD_BOT_API_BASEURL"),
                     Environment.GetEnvironmentVariable("DISCORD_BOT_API_PORT"));
             }
-
-            _chats.ForEach(chat => {
-                Thread trd = new Thread(new ThreadStart(() => StartConnection(chat)));
-                trd.Start();
-            });
+            foreach (var chat in _chats)
+            {
+                StartConnection(chat);
+            }
         }
         
         private async void StartConnection(TwitchChat chat)
         {
-            var tcpClient = new TcpClient(ip, port);
-            var twitchHandler = new TwitchIrcHandler(tcpClient);
-            await twitchHandler.Login(_twitchOAuth, "wondyrr");
-            await twitchHandler.JoinChat(chat.TwitchName);
+            var twitchConnection = new TwitchConnection(ip, port, chat.TwitchName);
+            connections.Add(chat.TwitchName, twitchConnection);
 
-            var timeout = 1000;
-            var reconnectionCount = 0;
+            var ircHandler = twitchConnection.GetTwitchIrcHandler();
+            Console.WriteLine("Connecting to chat: " + chat.TwitchName);
             
+            await ircHandler.Login(_twitchOAuth, "wondyrr");
+            await ircHandler.JoinChat(chat.TwitchName);
+
             while (true)
             {
-                var line = await twitchHandler.ReadMessage();
-                
-                try {
-                    HandleMessage(twitchHandler, chat, line);
-                } catch(Exception e)
-                {
-                    Console.WriteLine("Connection dropped, reconnecting in " + timeout);
-                    tcpClient.Close();
-                    Thread.Sleep(timeout);
-                    timeout = timeout * 2;
-                    reconnectionCount++;
-                    tcpClient = new TcpClient(ip, port);
-                    twitchHandler = new TwitchIrcHandler(tcpClient);
-                    await twitchHandler.Login(_twitchOAuth, "wondyrr");
-                    await twitchHandler.JoinChat(chat.TwitchName);
-                }
+                var line = await ircHandler.ReadMessage();
+                HandleMessage(ircHandler, chat, line);
             }
         }
         private async void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
@@ -101,8 +88,6 @@ namespace TwitchBot.Services
                     await handler.Pong(split[1]);
                     break;
                 default:
-                    Console.WriteLine(split[1]);
-                    Console.WriteLine("This command is not supported yet");
                     break;
             }
         }
@@ -119,6 +104,11 @@ namespace TwitchBot.Services
             {
                 Console.WriteLine("Can't connect to API, skipping..." + e);
             }
+        }
+        public async void SendTwitchMessage(string message, string twitchName)
+        {
+            var connection = connections.FirstOrDefault(x => x.Key == twitchName).Value;
+            await connection.GetTwitchIrcHandler().SendMessage(message, connection.TwitchName);
         }
         private void CreateChats(string twitchName, string baseUrl, string basePort)
         {

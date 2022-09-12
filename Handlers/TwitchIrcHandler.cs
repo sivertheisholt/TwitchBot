@@ -37,5 +37,10 @@ namespace TwitchBot.Handlers
             Console.WriteLine("Reading message");
             return await _reader.ReadLineAsync();
         }
+        public async Task SendMessage(string message, string twitchName)
+        {
+            Console.WriteLine("Sending message");
+            await _writer.WriteLineAsync($"PRIVMSG #{twitchName} :{message}");
+        }
     }
 }
