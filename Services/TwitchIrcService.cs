@@ -14,6 +14,7 @@ namespace TwitchBot.Services
     public class TwitchIrcService : ITwitchIrcService
     {
         private readonly IConfiguration _config;
+        private readonly ICommandService _commandService;
         private readonly List<TwitchChat> _chats = new List<TwitchChat>();
         private readonly string _twitchOAuth;
         static string ip = "irc.chat.twitch.tv";
@@ -21,10 +22,11 @@ namespace TwitchBot.Services
         private readonly HttpClient _httpClient;
         private readonly Dictionary<string, TwitchConnection> connections = new Dictionary<string, TwitchConnection>();
 
-        public TwitchIrcService(IConfiguration config, HttpClient httpClient)
+        public TwitchIrcService(IConfiguration config, HttpClient httpClient, ICommandService commandService)
         {
             _httpClient = httpClient;
             _config = config;
+            _commandService = commandService;
 
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
             if (env == "Development")
@@ -59,36 +61,61 @@ namespace TwitchBot.Services
             
             await ircHandler.Login(_twitchOAuth, "wondyrr");
             await ircHandler.JoinChat(chat.TwitchName);
-
-            while (true)
+            bool connectionAlive = true;
+            do
             {
-                var line = await ircHandler.ReadMessage();
-                HandleMessage(ircHandler, chat, line);
-            }
+                try
+                {
+                    var line = await ircHandler.ReadMessage();
+                    if(line == null) throw new Exception("Connection lost");
+                    HandleMessage(ircHandler, chat, line);
+                } catch (System.Exception e)
+                {
+                    Console.WriteLine("Something unexpect happen, probably connection reset... Will reconnect in 10 seconds " + e);
+                    await Task.Delay(10000);
+                    Console.WriteLine($"Trying to reconnect to chat: {chat.TwitchName}");
+                    twitchConnection.EndConnection();
+                    connections.Remove(chat.TwitchName);
+                    StartConnection(chat);
+                    connectionAlive = false;
+                }
+            } while (connectionAlive);
         }
         private async void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
         {
-            string[] split = line.Split(" ");
-            
-            if (split.Length < 1) return;
-            
-            switch (split[1])
+            try
             {
-                case "PRIVMSG":
-                    int exclamationPointPosition = split[0].IndexOf("!");
-                    string username = split[0].Substring(1, exclamationPointPosition - 1);
-                    //Skip the first character, the first colon, then find the next colon
-                    int secondColonPosition = line.IndexOf(':', 1); // the 1 here is what skips the first character
-                    string message = line.Substring(secondColonPosition + 1); // Everything past the second colon
-                    Console.WriteLine($"{username} said '{message}'");
+                string[] split = line.Split(" ");
+                
+                if (split.Length < 1) return;
+                
+                switch (split[1])
+                {
+                    case "PRIVMSG":
+                        Console.WriteLine(split[0]);
+                        int exclamationPointPosition = split[0].IndexOf("!");
+                        string username = split[0].Substring(1, exclamationPointPosition - 1);
+                        //Skip the first character, the first colon, then find the next colon
+                        int secondColonPosition = line.IndexOf(':', 1); // the 1 here is what skips the first character
+                        string message = line.Substring(secondColonPosition + 1); // Everything past the second colon
+                        Console.WriteLine($"{username} said '{message}'");
 
-                    SendHttpRequest(username, message, chat);
-                    break;
-                case "PING":
-                    await handler.Pong(split[1]);
-                    break;
-                default:
-                    break;
+                        SendHttpRequest(username, message, chat);
+                        if(message.Contains("!"))
+                        {
+                            _commandService.HandleCommand(chat, username, message, handler);
+                        }
+                        break;
+                    case "PING":
+                        await handler.Pong(split[1]);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (System.Exception e)
+            {
+                Console.WriteLine("Could not handle message, skippin... " + e);
             }
         }
         private async void SendHttpRequest(string username, string message, TwitchChat chat)

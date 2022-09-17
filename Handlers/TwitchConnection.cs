@@ -27,6 +27,10 @@ namespace TwitchBot.Handlers
         {
             return _ircHandler;
         }
+        public void EndConnection()
+        {
+            _client.Close();
+        }
         
     }
 }
