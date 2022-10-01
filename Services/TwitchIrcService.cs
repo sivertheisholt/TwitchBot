@@ -83,12 +83,17 @@ namespace TwitchBot.Services
         }
         private async void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
         {
+            Console.WriteLine(line);
             try
             {
                 string[] split = line.Split(" ");
                 
                 if (split.Length < 1) return;
-                
+                if(split[0] == "PING")
+                {
+                    await handler.Pong(split[1]);
+                    return;
+                }
                 switch (split[1])
                 {
                     case "PRIVMSG":
@@ -105,9 +110,6 @@ namespace TwitchBot.Services
                         {
                             _commandService.HandleCommand(chat, username, message, handler);
                         }
-                        break;
-                    case "PING":
-                        await handler.Pong(split[1]);
                         break;
                     default:
                         break;
