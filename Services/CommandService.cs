@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TwitchBot.DTOs;
 using TwitchBot.Entities;
 using TwitchBot.Handlers;
 using TwitchBot.Interfaces;
@@ -30,6 +31,16 @@ namespace TwitchBot.Services
                     } else {
                         await twitchIrcHandler.SendMessage($"@{username} you are level {user.Level}, have sent {user.Messagecount} message and have {user.Xp} XP.", chat.TwitchName);
                     }
+                    break;
+                case "!translate":
+                    var messageSend = "";
+                    for (int i = 2; i < split.Length; i++)
+                    {
+                        messageSend += " " + split[i];
+                    }
+                    Console.WriteLine(messageSend);
+                    var dto = new DiscordCommandDto {CommandTrigger = command.Remove(0, 1), CommandTriggerParam = split[1], Username = username, CommandMessage = messageSend};
+                    _botApiService.SendCommand(chat, dto);
                     break;
                 default:
                     Console.WriteLine("Command does not exist");

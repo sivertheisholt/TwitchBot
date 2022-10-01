@@ -83,7 +83,6 @@ namespace TwitchBot.Services
         }
         private async void HandleMessage(TwitchIrcHandler handler, TwitchChat chat, string line)
         {
-            Console.WriteLine(line);
             try
             {
                 string[] split = line.Split(" ");
@@ -97,7 +96,6 @@ namespace TwitchBot.Services
                 switch (split[1])
                 {
                     case "PRIVMSG":
-                        Console.WriteLine(split[0]);
                         int exclamationPointPosition = split[0].IndexOf("!");
                         string username = split[0].Substring(1, exclamationPointPosition - 1);
                         //Skip the first character, the first colon, then find the next colon

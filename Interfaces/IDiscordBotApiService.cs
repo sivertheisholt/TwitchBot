@@ -11,5 +11,6 @@ namespace TwitchBot.Interfaces
     {
         Task<UserDto> GetUser(TwitchChat chat, string username);
         void SendNewMessage(string username, string message, TwitchChat chat);
+        void SendCommand(TwitchChat chat, DiscordCommandDto commandDto);
     }
 }

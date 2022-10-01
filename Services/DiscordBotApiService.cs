@@ -23,7 +23,7 @@ namespace TwitchBot.Services
         {
             // Sending message to discord bot
             var dto = new {Username = username, Message = message};
-            var jsonString = System.Text.Json.JsonSerializer.Serialize(dto);
+            var jsonString = JsonConvert.SerializeObject(dto);
             var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
             
             try{
@@ -56,5 +56,18 @@ namespace TwitchBot.Services
             }
         }
 
+        public async void SendCommand(TwitchChat chat, DiscordCommandDto commandDto)
+        {
+            var jsonString = JsonConvert.SerializeObject(commandDto);
+            var httpContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
+            try
+            {
+                await _httpClient.PostAsync($"{chat.BotBaseUrl}:{chat.BotBasePort}/TwitchChat/command", httpContent);
+            }
+            catch (HttpRequestException e)
+            {
+                Console.WriteLine("Can't connect to API or invalid response, skipping..." + e);
+            }
+        }
     }
 }

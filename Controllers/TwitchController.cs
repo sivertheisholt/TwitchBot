@@ -24,5 +24,13 @@ namespace TwitchBot.Controllers
             _twitchIrcService.SendTwitchMessage(messageDto.Message, messageDto.TwitchName);
             return Ok();
         }
+        
+        [HttpPost]
+        [Route("message")]
+        public async Task<IActionResult> SendMessage(TwitchSendMessageDto messageDto)
+        {
+            _twitchIrcService.SendTwitchMessage(messageDto.Message, messageDto.TwitchName);
+            return Ok();
+        }
     }
 }
