@@ -21,7 +21,7 @@ namespace TwitchBot.Services
         {
             var split = message.Split(" ");
             var command = split[0];
-            switch(command)
+            switch(command.ToLower())
             {
                 case "!me":
                     var user = await _botApiService.GetUser(chat, username);
@@ -38,9 +38,12 @@ namespace TwitchBot.Services
                     {
                         messageSend += " " + split[i];
                     }
-                    Console.WriteLine(messageSend);
                     var dto = new DiscordCommandDto {CommandTrigger = command.Remove(0, 1), CommandTriggerParam = split[1], Username = username, CommandMessage = messageSend};
                     _botApiService.SendCommand(chat, dto);
+                    break;
+                case "!insult":
+                    var insultDto = new DiscordCommandDto {CommandTrigger = command.Remove(0, 1), CommandTriggerParam = "", Username = username, CommandMessage = ""};
+                    _botApiService.SendCommand(chat, insultDto);
                     break;
                 default:
                     Console.WriteLine("Command does not exist");
